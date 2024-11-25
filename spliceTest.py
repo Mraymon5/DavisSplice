@@ -21,8 +21,8 @@ Lick_inport = 7 # Should be wired to Lick TTL channel
 
 ShutterWas = GPIO.input(Shutter_inport)
 LickWas = GPIO.input(Lick_inport)
-print(f'Shutter Channel is: {ShutterWas}')
-print(f'Lick Channel is: {LickWas}')
+print(f'Shutter Channel initial state: {ShutterWas}')
+print(f'Lick Channel initial state: {LickWas}')
 
 try:
     print("Opening testing loop, ctrl+C to close")
@@ -31,10 +31,10 @@ try:
         LickIs = GPIO.input(Lick_inport)
         
         if (ShutterWas != ShutterIs):
-            print(ShutterIs)
+            print(f'Shutter is: {ShutterIs}')
             ShutterWas = ShutterIs
         if (LickWas != LickIs):
-            print(LickIs)
+            print(f'Lick Channel is: {LickIs}')
             LickWas = LickIs
 except:
     print("Ending Script")

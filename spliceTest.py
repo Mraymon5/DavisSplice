@@ -1,4 +1,6 @@
 #Setting up a file to test the pi inputs from the splicer
+#Run this script to open a loop that monitors and reports on the Lick_ and Shutter_inport pins on a raspberry pi. Allows for debugging those inputs with real-time feedback.
+
 import RPi.GPIO as GPIO
 import time
 import numpy as np

@@ -19,9 +19,18 @@ GPIO.setup(Shutter_inport, GPIO.IN)
 Lick_inport = 7 # Should be wired to Lick TTL channel
 
 
-print(f'Shutter Channel is: {GPIO.input(Shutter_inport)}')
-print(f'Lick Channel is: {GPIO.input(Lick_inport)}')
+ShutterWas = GPIO.input(Shutter_inport)
+LickWas = GPIO.input(Lick_inport)
+print(f'Shutter Channel is: {ShutterWas}')
+print(f'Lick Channel is: {LickWas}')
 
-    while shutteropen == 0:
-        if GPIO.input(Shutter_inport) == GPIO.LOW:     #if IR beam is broken
-            shutteropen = 1                     #break out of while loop
+    while True:
+        ShutterIs = GPIO.input(Shutter_inport)
+        LickIs = GPIO.input(Lick_inport)
+        
+        if (ShutterWas != ShutterIs):
+            print(ShutterIs)
+            ShutterWas = ShutterIs
+        if (LickWas != LickIs):
+            print(LickIs)
+            LickWas = LickIs

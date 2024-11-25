@@ -24,6 +24,8 @@ LickWas = GPIO.input(Lick_inport)
 print(f'Shutter Channel is: {ShutterWas}')
 print(f'Lick Channel is: {LickWas}')
 
+try:
+    print("Opening testing loop, ctrl+C to close")
     while True:
         ShutterIs = GPIO.input(Shutter_inport)
         LickIs = GPIO.input(Lick_inport)
@@ -34,3 +36,5 @@ print(f'Lick Channel is: {LickWas}')
         if (LickWas != LickIs):
             print(LickIs)
             LickWas = LickIs
+except:
+    print("Ending Script")

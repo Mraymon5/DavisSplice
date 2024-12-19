@@ -11,14 +11,14 @@ import easygui
 # Setup pi board
 GPIO.setwarnings(False)
 GPIO.cleanup()
-GPIO.setmode(GPIO.BOARD)
+GPIO.setmode(GPIO.BCM)
 
 #define the pin that goes to the beam break for shutter open/close detection
-Shutter_inport = 5 # Should be wired to Shutter Mag Sensor channel
-GPIO.setup(Shutter_inport, GPIO.IN)
-
+Shutter_inport = 20 # Should be wired to Shutter Mag Sensor channel
+GPIO.setup(Shutter_inport, GPIO.IN,pull_up_down=GPIO.PUD_DOWN)
 #define the pin that goes to the lick detector (the photodiode)
-Lick_inport = 7 # Should be wired to Lick TTL channel
+Lick_inport = 21 # Should be wired to Lick TTL channel
+GPIO.setup(Lick_inport, GPIO.IN,pull_up_down=GPIO.PUD_DOWN)
 
 
 ShutterWas = GPIO.input(Shutter_inport)

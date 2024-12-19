@@ -10,23 +10,29 @@ import RPi.GPIO as GPIO
 import time
 import numpy as np
 import easygui
+import ast
 #import sys
 
 #%% Setup
 # Setup pi board
 GPIO.setwarnings(False)
 GPIO.cleanup()
-GPIO.setmode(GPIO.BOARD)
+GPIO.setmode(GPIO.BCM)
 
 #define the pin that goes to the beam break for shutter open/close detection
 Shutter_inport = 5
-GPIO.setup(Shutter_inport, GPIO.IN)
-
 #define the pin that goes to the lick detector (the photodiode)
 Lick_inport = 7
 
 #%% Laser Trigger Function, for laser on every trial            
-def laser_trigger_all(laser_ports = [22], trial_duration = 5, NTrials = None, subj_id = None, maxWait = 60, ITI = 10):
+def laser_trigger_all(laser_ports = [16,12], #Pins that output to the laser
+                      trial_duration = 5, #Trial Duration (sec)
+                      NTrials = None, #Number of trials in session
+                      subj_id = None, #Subject ID
+                      maxWait = 60, #Max Wait time per trial (sec)
+                      ITI = 10, #Inter-Trial Interval (sec)
+                      Shutter_inport = 20, #Pin monitoring the shutter mag sensor
+                      Lick_inport = 21): #Pin monitoring the lick sensor
     r'''
     Run a Davis Rig session with laser trials triggered by licking. This version triggers the laser on every trial.
 
@@ -42,16 +48,38 @@ def laser_trigger_all(laser_ports = [22], trial_duration = 5, NTrials = None, su
     for i in laser_ports:
         GPIO.setup(i, GPIO.OUT)
         GPIO.output(i, 0)
+    
+    #Set up shutter input pin
+    GPIO.setup(Shutter_inport, GPIO.IN,pull_up_down=GPIO.PUD_DOWN)
+
+    #Set up the lick input pin
+    GPIO.setup(Lick_inport, GPIO.IN,pull_up_down=GPIO.PUD_DOWN) #Change the pin back to input
 
     #Get user inputs if they have not been provided
+    Params = easygui.multenterbox(title= 'Parameters',
+                                  fields=["Subject ID","Laser output ports", "Shutter input Port", "Lick input port","Trial duration", "N Trials", "Max Wait", "ITI"],
+                                  values=[subj_id,laser_ports,Shutter_inport,Lick_inport,trial_duration,NTrials,maxWait,ITI])
+    subj_id = str(Params[0])
+    laser_ports = ast.literal_eval(Params[1])
+    Shutter_inport = int(Params[2])
+    Lick_inport = int(Params[3])
+    trial_duration = int(Params[4])
+    NTrials = int(Params[5])
+    maxWait = int(Params[6])
+    ITI = int(Params[7])
+    print(Params)
+
     if not NTrials:
         taste_seq = easygui.multenterbox(msg = 'Enter the number of taste presentations:', 
                                          fields = ['Number of Trials'])
         taste_seq = taste_seq[0].split(',')
         NTrials = int(taste_seq[0])
-    if not subj_id:
-        subj_id = easygui.multenterbox(msg = 'Enter the animal ID:', fields = ['Animal ID'])
- 
+    while subj_id == '':
+        subj_id = easygui.multenterbox(msg = 'Enter the animal ID:', fields = ['Animal ID'])[0]
+    if subj_id is None:
+        print("Exiting")
+        return
+    
     #create laser order for each taste
     laser_trials = np.ones(NTrials)
 
@@ -60,22 +88,10 @@ def laser_trigger_all(laser_ports = [22], trial_duration = 5, NTrials = None, su
 
     #Save laser trial order into a text file
     with open("{}_trials_order_{}.txt".format(subj_id[0],time.strftime("%Y%m%d")), 'w') as laserfile:
-        OutText = "Animal_ID,NTrials,StartTime" + "\n" + str(subj_id[0]) + "," + str(NTrials) + "," + str(time.strftime("%H:%M:%S"))
+        OutText = "Animal_ID,NTrials,StartTime" + "\n" + str(subj_id) + "," + str(NTrials) + "," + str(time.strftime("%H:%M:%S"))
         laserfile.write(OutText)
 
-    print('Waiting for beam break signal....\nPress Ctrl-C to quit!')
-
-
-    #Initialize the lick sensor channel
-    GPIO.setup(Lick_inport, GPIO.OUT)
-    GPIO.output(Lick_inport, GPIO.LOW)
-    time.sleep(0.1)
-    GPIO.setup(Lick_inport, GPIO.IN) #Change the pin back to input
-#    while not GPIO.input(Lick_inport):
-#        time.sleep(1)
-#        print('no light')
-#    print(GPIO.input(Lick_inport))
-#    print(GPIO.input(Lick_inport))
+    print('Press Ctrl-C to quit!')
 
     for trial in range(NTrials):
                              
@@ -98,12 +114,12 @@ def laser_trigger_all(laser_ports = [22], trial_duration = 5, NTrials = None, su
                     if int(laser_trials[trial]) == 1:
                         for laser in laser_ports:              #turn lasers on
                             GPIO.output(laser, int(laser_trials[trial]))
-                            print('Lick detected, Laser is turned ON')
-                            time.sleep(trial_duration)
+                        print('Lick detected, Laser ON')
+                        time.sleep(trial_duration)
                         for laser in laser_ports:              #turn lasers off
                             GPIO.output(laser, 0)
-                            print('Laser is turned OFF')
-                            time.sleep(ITI*0.8) #Wait for 80% of the ITI before looking for the shutter to open again
+                        print('Trial Elapsed, Laser OFF')
+                        time.sleep(ITI*0.8) #Wait for 80% of the ITI before looking for the shutter to open again
                     else:
                         print('Lick detected, Laser remains OFF for control trial')
                         time.sleep(trial_duration)
@@ -111,6 +127,7 @@ def laser_trigger_all(laser_ports = [22], trial_duration = 5, NTrials = None, su
                 else:
                     print("Trial " + str(trial) + " expired: no lick detected")
                     time.sleep(ITI*0.8) #Wait for 80% of the ITI before looking for the shutter to open again
+                
 
 #%%
 #Counts the #of loops passed until a high level of light is sensed
@@ -126,12 +143,6 @@ def rc_time(Lick_inport, maxWait, time_trial_start):
     #Reset the counter
     count = 0
   
-    #Initialize the lick sensor channel
-    GPIO.setup(Lick_inport, GPIO.OUT) #Set the pin to output
-    GPIO.output(Lick_inport, GPIO.LOW) #Set the output to LOW
-    time.sleep(0.1) #Wait for the pin to adjust
-    GPIO.setup(Lick_inport, GPIO.IN) #Change the pin back to input
-  
     #Count until the pin goes high
     while (GPIO.input(Lick_inport) == GPIO.LOW):
         count += 1
@@ -140,3 +151,7 @@ def rc_time(Lick_inport, maxWait, time_trial_start):
         if (time.time() - time_trial_start) >= maxWait: 
             return 0
     return count
+
+#%%
+if __name__ == "__main__":
+    laser_trigger_all()

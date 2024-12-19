@@ -2,6 +2,8 @@
 #When there is a lick (light flash) detected by a photodiode (GPIO is greater than GOPI.low)
 #Only during laser trials, when shutter is up, when lick is detected
 
+#For GPIO Layout, see: https://www.bigmessowires.com/wp-content/uploads/2018/05/Raspberry-GPIO.jpg
+
 #Created by Kathleen Maigler
 #Modified by Martin Raymond
 
